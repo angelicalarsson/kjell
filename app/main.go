@@ -8,15 +8,20 @@ import (
 )
 
 func main() {
-	fmt.Print("$ ")
 
 	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
 
-	err := scanner.Err()
-	if err != nil {
-		log.Print(err)
+	fmt.Print("$ ")
+	for scanner.Scan() {
+
+		err := scanner.Err()
+
+		if err != nil {
+			log.Print(err)
+		}
+
+		fmt.Printf("%s: command not found\n", scanner.Text())
+		fmt.Print("$ ")
+
 	}
-
-	fmt.Printf("%s: command not found", scanner.Text())
 }
