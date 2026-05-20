@@ -3,25 +3,31 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
+	"strings"
 )
 
 func main() {
-
 	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Print("$ ")
-	for scanner.Scan() {
-
-		err := scanner.Err()
-
-		if err != nil {
-			log.Print(err)
-		}
-
-		fmt.Printf("%s: command not found\n", scanner.Text())
+	err := scanner.Err()
+	for {
 		fmt.Print("$ ")
 
+		if !scanner.Scan() {
+			break
+		}
+
+		command := strings.TrimSpace(scanner.Text())
+
+		if command == "exit" {
+			os.Exit(0)
+		}
+
+		fmt.Println(command[:len(command)-1] + ": command not found")
+	}
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading input:", err)
+		os.Exit(1)
 	}
 }
