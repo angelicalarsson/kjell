@@ -8,26 +8,41 @@ import (
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
-	err := scanner.Err()
+	reader := bufio.NewReader(os.Stdin)
+
 	for {
 		fmt.Print("$ ")
 
-		if !scanner.Scan() {
-			break
+		command, err := reader.ReadString('\n')
+
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error reading input:", err)
+			os.Exit(1)
 		}
 
-		command := strings.TrimSpace(scanner.Text())
+		command = strings.TrimSpace(command)
+
+		builtin := map[string]bool{
+			"exit": true,
+			"echo": true,
+			"type": true,
+		}
 
 		if command == "exit" {
-			os.Exit(0)
+			break
+		} else if strings.HasPrefix(command, "echo ") {
+			fmt.Println(command[5:])
+		} else if strings.HasPrefix(command, "type ") {
+			s := strings.TrimPrefix(command, "type ")
+			if _, ok := builtin[s]; ok {
+				fmt.Printf("%s is a shell builtin\n", s)
+			} else {
+				fmt.Println(s + ": not found")
+
+			}
+		} else {
+			fmt.Println(command + ": command not found")
 		}
 
-		fmt.Println(command[:] + ": command not found")
-	}
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading input:", err)
-		os.Exit(1)
 	}
 }
