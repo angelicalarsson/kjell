@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 )
@@ -56,10 +57,19 @@ func handleType(args []string) {
 	builtins := []string{"exit", "echo", "type"}
 
 	for _, arg := range args {
+
 		if slices.Contains(builtins, arg) {
 			fmt.Printf("%s is a shell builtin\n", arg)
-		} else {
-			fmt.Printf("%s: not found\n", arg)
+			continue
 		}
+
+		path, err := exec.LookPath(arg)
+		if err != nil {
+			fmt.Printf("%s not found\n", arg)
+			continue
+		}
+
+		fmt.Printf("%s is %s\n", arg, path)
+
 	}
 }
