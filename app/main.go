@@ -37,8 +37,10 @@ func main() {
 			handleEcho(args)
 		case "type":
 			handleType(args)
+		case "pwd":
+			handlePrintWorkingDirectory()
 		default:
-			if handleExecutable(cmd, args) != nil {
+			if handleExecutable(words) != nil {
 				fmt.Printf("%s: command not found\n", cmd)
 
 			}
@@ -78,18 +80,28 @@ func handleType(args []string) {
 	}
 }
 
-func handleExecutable(prog string, args []string) error {
+func handleExecutable(args []string) error {
 
-	_, err := exec.LookPath(prog)
+	_, err := exec.LookPath(args[0])
 
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command(prog, args...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
 
 	return nil
+}
+
+func handlePrintWorkingDirectory() {
+	path, err := os.Getwd()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(path)
 }
