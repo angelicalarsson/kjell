@@ -25,6 +25,7 @@ func main() {
 
 		words := strings.Split(cmdLine, " ")
 
+		//handleExecutable(cmd, args)
 		cmd := words[0]
 		args := words[1:]
 
@@ -37,7 +38,10 @@ func main() {
 		case "type":
 			handleType(args)
 		default:
-			fmt.Println(cmd + ": not found")
+			if handleExecutable(cmd, args) != nil {
+				fmt.Printf("%s: command not found\n", cmd)
+
+			}
 		}
 
 	}
@@ -72,4 +76,20 @@ func handleType(args []string) {
 		fmt.Printf("%s is %s\n", arg, path)
 
 	}
+}
+
+func handleExecutable(prog string, args []string) error {
+
+	_, err := exec.LookPath(prog)
+
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(prog, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+
+	return nil
 }
