@@ -60,7 +60,7 @@ func handleEcho(args []string) {
 }
 
 func handleType(args []string) {
-	builtins := []string{"exit", "echo", "type"}
+	builtins := []string{"exit", "echo", "type", "pwd"}
 
 	for _, arg := range args {
 
