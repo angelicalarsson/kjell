@@ -90,6 +90,8 @@ type CdCommand struct{}
 func (c *CdCommand) Execute(args []string) error {
 	targetDir := args[0]
 
+	targetDir = strings.ReplaceAll(targetDir, "~", os.Getenv("HOME"))
+
 	err := os.Chdir(targetDir)
 	if err != nil {
 		fmt.Printf("cd: %s: No such file or directory\n", targetDir)
