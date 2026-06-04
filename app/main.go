@@ -34,7 +34,7 @@ func main() {
 			continue
 		}
 
-		parts, err := parseInput(input)
+		parts, err := ParseInput(input)
 
 		if err != nil {
 			fmt.Print(err)
@@ -58,53 +58,4 @@ func main() {
 
 	}
 
-}
-
-func parseInput(input string) ([]string, error) {
-	var inSingleQuote, inDoubleQuote, isEscaped bool
-	var parts []string
-	var builder strings.Builder
-
-	for _, r := range input {
-
-		if inSingleQuote && r != '\'' {
-			builder.WriteRune(r)
-			continue
-		}
-
-		if isEscaped {
-			builder.WriteRune(r)
-			isEscaped = false
-			continue
-		}
-
-		if r == '\\' && !inDoubleQuote {
-			isEscaped = true
-			continue
-		}
-
-		if r == '"' && !inSingleQuote {
-			inDoubleQuote = !inDoubleQuote
-			continue
-		}
-
-		if r == '\'' && !inDoubleQuote {
-			inSingleQuote = !inSingleQuote
-			continue
-		}
-
-		if r == ' ' && !inSingleQuote && !inDoubleQuote {
-			if builder.Len() == 0 {
-				continue
-			}
-			parts = append(parts, builder.String())
-			builder.Reset()
-			continue
-		}
-
-		builder.WriteRune(r)
-	}
-	parts = append(parts, builder.String())
-
-	return parts, nil
 }
