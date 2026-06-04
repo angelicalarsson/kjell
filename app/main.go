@@ -67,6 +67,11 @@ func parseInput(input string) ([]string, error) {
 
 	for _, r := range input {
 
+		if inSingleQuote && r != '\'' {
+			builder.WriteRune(r)
+			continue
+		}
+
 		if isEscaped {
 			builder.WriteRune(r)
 			isEscaped = false
@@ -78,7 +83,7 @@ func parseInput(input string) ([]string, error) {
 			continue
 		}
 
-		if r == '"' {
+		if r == '"' && !inSingleQuote {
 			inDoubleQuote = !inDoubleQuote
 			continue
 		}
