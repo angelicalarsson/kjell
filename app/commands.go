@@ -47,8 +47,7 @@ func (c *TypeCommand) Execute(args []string) error {
 
 		path, err := exec.LookPath(arg)
 		if err != nil {
-			fmt.Printf("%s not found\n", arg)
-			continue
+			return fmt.Errorf("%s not found", arg)
 		}
 
 		fmt.Printf("%s is %s\n", arg, path)
@@ -57,23 +56,27 @@ func (c *TypeCommand) Execute(args []string) error {
 	return nil
 }
 
-type ExternalCommand struct{}
+type ExternalCommand struct {
+	executable string
+}
 
 func (c *ExternalCommand) Execute(args []string) error {
-	targetDir := args[0]
 
-	_, err := exec.LookPath(args[0])
-
-	if err != nil {
-		return fmt.Errorf("%s: command not found\n", targetDir)
+	if len(c.executable) == 0 {
+		return fmt.Errorf("\n")
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
+	_, err := exec.LookPath(c.executable)
+
+	if err != nil {
+		return fmt.Errorf("%s: command not found", c.executable)
+	}
+
+	var cmd = exec.Command(c.executable, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
 
-	return nil
+	return cmd.Run()
 }
 
 type PwdCommand struct{}
@@ -91,13 +94,18 @@ func (c *PwdCommand) Execute(args []string) error {
 type CdCommand struct{}
 
 func (c *CdCommand) Execute(args []string) error {
-	targetDir := args[0]
+	var dir string
 
-	targetDir = strings.ReplaceAll(targetDir, "~", os.Getenv("HOME"))
+	if len(args) == 0 {
+		dir = os.Getenv("HOME")
+	} else {
+		dir = args[0]
+		dir = strings.ReplaceAll(dir, "~", os.Getenv("HOME"))
+	}
 
-	err := os.Chdir(targetDir)
+	err := os.Chdir(dir)
 	if err != nil {
-		fmt.Printf("cd: %s: No such file or directory\n", targetDir)
+		return fmt.Errorf("cd: %s: No such file or directory", dir)
 	}
 
 	return nil
