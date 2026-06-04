@@ -38,17 +38,21 @@ func main() {
 		parts, err := parseInput(input)
 
 		if err != nil {
-			fmt.Printf("Error with parseInput: %v", err)
+			fmt.Print(err)
 		}
 
-		cmdName := parts[0]
+		cmd := parts[0]
 		args := parts[1:]
 
-		if command, exists := commands[cmdName]; exists {
-			command.Execute(args)
+		if command, exists := commands[cmd]; exists {
+			err = command.Execute(args)
 		} else {
 			externalCmd := &ExternalCommand{}
-			externalCmd.Execute(parts)
+			err = externalCmd.Execute(parts)
+		}
+
+		if err != nil {
+			fmt.Print(err)
 		}
 
 	}
@@ -56,18 +60,23 @@ func main() {
 }
 
 func parseInput(input string) ([]string, error) {
-	inSingleQuote := false
+	var inSingleQuote, inDoubleQuote bool
 	var parts []string
 	var builder strings.Builder
 
 	for _, r := range input {
 
-		if r == '\'' {
+		if r == '"' {
+			inDoubleQuote = !inDoubleQuote
+			continue
+		}
+
+		if r == '\'' && !inDoubleQuote {
 			inSingleQuote = !inSingleQuote
 			continue
 		}
 
-		if r == ' ' && !inSingleQuote {
+		if r == ' ' && !inSingleQuote && !inDoubleQuote {
 			if builder.Len() == 0 {
 				continue
 			}

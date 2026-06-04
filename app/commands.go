@@ -65,8 +65,7 @@ func (c *ExternalCommand) Execute(args []string) error {
 	_, err := exec.LookPath(args[0])
 
 	if err != nil {
-		fmt.Printf("%s: command not found\n", targetDir)
-		return nil
+		return fmt.Errorf("%s: command not found\n", targetDir)
 	}
 
 	cmd := exec.Command(args[0], args[1:]...)
