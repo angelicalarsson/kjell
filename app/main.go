@@ -35,7 +35,12 @@ func main() {
 			continue
 		}
 
-		parts := strings.Fields(input)
+		parts, err := parseInput(input)
+
+		if err != nil {
+			fmt.Printf("Error with parseInput: %v", err)
+		}
+
 		cmdName := parts[0]
 		args := parts[1:]
 
@@ -48,4 +53,32 @@ func main() {
 
 	}
 
+}
+
+func parseInput(input string) ([]string, error) {
+	inSingleQuote := false
+	var parts []string
+	var builder strings.Builder
+
+	for _, r := range input {
+
+		if r == '\'' {
+			inSingleQuote = !inSingleQuote
+			continue
+		}
+
+		if r == ' ' && !inSingleQuote {
+			if builder.Len() == 0 {
+				continue
+			}
+			parts = append(parts, builder.String())
+			builder.Reset()
+			continue
+		}
+
+		builder.WriteRune(r)
+	}
+	parts = append(parts, builder.String())
+
+	return parts, nil
 }

@@ -23,6 +23,10 @@ func (c *ExitCommand) Execute(args []string) error {
 type EchoCommand struct{}
 
 func (c *EchoCommand) Execute(args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+
 	msg := strings.Join(args, " ")
 	fmt.Println(msg)
 
