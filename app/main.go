@@ -15,9 +15,8 @@ func main() {
 	commands["exit"] = &ExitCommand{}
 	commands["echo"] = &EchoCommand{}
 
-	builtinNames := []string{"echo", "exit", "type", "pwd", "cd"}
 	commands["type"] = &TypeCommand{
-		builtins: builtinNames,
+		builtins: []string{"echo", "exit", "type", "pwd", "cd"},
 	}
 	commands["pwd"] = &PwdCommand{}
 	commands["cd"] = &CdCommand{}
@@ -47,12 +46,14 @@ func main() {
 		if command, exists := commands[cmd]; exists {
 			err = command.Execute(args)
 		} else {
-			externalCmd := &ExternalCommand{}
-			err = externalCmd.Execute(parts)
+			ext := &ExternalCommand{
+				executable: cmd,
+			}
+			err = ext.Execute(args)
 		}
 
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 		}
 
 	}
@@ -60,11 +61,22 @@ func main() {
 }
 
 func parseInput(input string) ([]string, error) {
-	var inSingleQuote, inDoubleQuote bool
+	var inSingleQuote, inDoubleQuote, isEscaped bool
 	var parts []string
 	var builder strings.Builder
 
 	for _, r := range input {
+
+		if isEscaped {
+			builder.WriteRune(r)
+			isEscaped = false
+			continue
+		}
+
+		if r == '\\' && !inDoubleQuote {
+			isEscaped = true
+			continue
+		}
 
 		if r == '"' {
 			inDoubleQuote = !inDoubleQuote
