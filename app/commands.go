@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"slices"
@@ -9,12 +10,12 @@ import (
 )
 
 type Command interface {
-	Execute(args []string) error
+	Execute(args []string, out io.Writer) error
 }
 
 type ExitCommand struct{}
 
-func (c *ExitCommand) Execute(args []string) error {
+func (c *ExitCommand) Execute(args []string, _ io.Writer) error {
 	os.Exit(0)
 
 	return nil
@@ -22,26 +23,26 @@ func (c *ExitCommand) Execute(args []string) error {
 
 type EchoCommand struct{}
 
-func (c *EchoCommand) Execute(args []string) error {
+func (c *EchoCommand) Execute(args []string, out io.Writer) error {
 	if len(args) == 0 {
+		fmt.Fprintln(out)
 		return nil
 	}
-
 	msg := strings.Join(args, " ")
-	fmt.Println(msg)
+	_, err := fmt.Fprintln(out, msg)
 
-	return nil
+	return err
 }
 
 type TypeCommand struct {
 	builtins []string
 }
 
-func (c *TypeCommand) Execute(args []string) error {
+func (c *TypeCommand) Execute(args []string, out io.Writer) error {
 	for _, arg := range args {
 
 		if slices.Contains(c.builtins, arg) {
-			fmt.Printf("%s is a shell builtin\n", arg)
+			fmt.Fprintf(out, "%s is a shell builtin\n", arg)
 			continue
 		}
 
@@ -50,50 +51,57 @@ func (c *TypeCommand) Execute(args []string) error {
 			return fmt.Errorf("%s not found", arg)
 		}
 
-		fmt.Printf("%s is %s\n", arg, path)
+		fmt.Fprintf(out, "%s is %s\n", arg, path)
 	}
 
 	return nil
 }
 
 type ExternalCommand struct {
-	executable string
+	path string
 }
 
-func (c *ExternalCommand) Execute(args []string) error {
+func (c *ExternalCommand) Execute(args []string, out io.Writer) error {
 
-	if len(c.executable) == 0 {
+	if len(c.path) == 0 {
 		return fmt.Errorf("\n")
 	}
 
-	_, err := exec.LookPath(c.executable)
-
-	if err != nil {
-		return fmt.Errorf("%s: command not found", c.executable)
+	if _, err := exec.LookPath(c.path); err != nil {
+		return fmt.Errorf("%s: command not found", c.path)
 	}
 
-	var cmd = exec.Command(c.executable, args...)
-	cmd.Stdout = os.Stdout
+	cmd := exec.Command(c.path, args...)
+	cmd.Stdout = out
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	err := cmd.Run()
+
+	if err != nil {
+		// Suppress status 1
+		if _, isExitError := err.(*exec.ExitError); isExitError {
+			return nil
+		}
+	}
+
+	return err
 }
 
 type PwdCommand struct{}
 
-func (c *PwdCommand) Execute(args []string) error {
+func (c *PwdCommand) Execute(args []string, out io.Writer) error {
 	path, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	fmt.Println(path)
+	fmt.Fprintln(out, path)
 
 	return nil
 }
 
 type CdCommand struct{}
 
-func (c *CdCommand) Execute(args []string) error {
+func (c *CdCommand) Execute(args []string, out io.Writer) error {
 	var dir string
 
 	if len(args) == 0 {

@@ -1,8 +1,10 @@
 package main
 
-import "strings"
+import (
+	"strings"
+)
 
-func ParseInput(input string) ([]string, error) {
+func ParseQuotations(input string) ([]string, error) {
 	var parts []string
 	var builder strings.Builder
 	var inSingleQuote, inDoubleQuote, isEscaped bool
@@ -60,4 +62,19 @@ func ParseInput(input string) ([]string, error) {
 	}
 
 	return parts, nil
+}
+
+func ParseRedirection(parts []string) ([]string, string, error) {
+	var args = parts
+	var target string
+
+	for i, r := range parts {
+		if r == ">" || r == "1>" {
+			args = parts[0:i]
+			target = parts[i+1]
+			break
+		}
+	}
+
+	return args, target, nil
 }

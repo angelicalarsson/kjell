@@ -3,28 +3,22 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
+type Shell struct {
+	in       *bufio.Reader
+	out      io.Writer
+	commands map[string]Command
+}
 
-	commands := make(map[string]Command)
-
-	commands["exit"] = &ExitCommand{}
-	commands["echo"] = &EchoCommand{}
-
-	commands["type"] = &TypeCommand{
-		builtins: []string{"echo", "exit", "type", "pwd", "cd"},
-	}
-	commands["pwd"] = &PwdCommand{}
-	commands["cd"] = &CdCommand{}
-
+func (s *Shell) run() {
 	for {
 		fmt.Print("$ ")
 
-		input, err := reader.ReadString('\n')
+		input, err := s.in.ReadString('\n')
 		if err != nil {
 			break
 		}
@@ -34,28 +28,71 @@ func main() {
 			continue
 		}
 
-		parts, err := ParseInput(input)
-
+		parts, err := ParseQuotations(input)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Fprintln(s.out, "Error parsing quotes:", err)
+			continue
 		}
 
-		cmd := parts[0]
-		args := parts[1:]
+		args, target, err := ParseRedirection(parts)
+		if err != nil {
+			fmt.Fprintln(s.out, "Error parsing redirection:", err)
+			continue
+		}
 
-		if command, exists := commands[cmd]; exists {
-			err = command.Execute(args)
+		cmdOut := s.out
+		var outFile *os.File
+
+		if target != "" {
+			// O_CREATE: Create it if it doesn't exist
+			// O_WRONLY: Open for writing only
+			// O_TRUNC: Truncate (empty) the file if it already exists (standard '>' behavior)
+			// 0644: Standard permissions (read/write for owner, read for others)
+			outFile, err = os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+			if err != nil {
+				fmt.Fprintln(s.out, "Error opening redirect file:", err)
+				continue
+			}
+
+			cmdOut = outFile
+		}
+
+		if command, exists := s.commands[args[0]]; exists {
+			err = command.Execute(args[1:], cmdOut)
 		} else {
 			ext := &ExternalCommand{
-				executable: cmd,
+				path: args[0],
 			}
-			err = ext.Execute(args)
+			err = ext.Execute(args[1:], cmdOut)
 		}
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(s.out, err)
 		}
 
+		if outFile != nil {
+			outFile.Close()
+		}
 	}
+}
 
+func NewShell(in *os.File, out *os.File) *Shell {
+	return &Shell{
+		in:  bufio.NewReader(in),
+		out: out,
+		commands: map[string]Command{
+			"exit": &ExitCommand{},
+			"echo": &EchoCommand{},
+			"pwd":  &PwdCommand{},
+			"cd":   &CdCommand{},
+			"type": &TypeCommand{
+				builtins: []string{"echo", "exit", "type", "pwd", "cd"},
+			},
+		},
+	}
+}
+
+func main() {
+	kjell := NewShell(os.Stdin, os.Stdout)
+	kjell.run()
 }
